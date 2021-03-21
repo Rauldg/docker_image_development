@@ -14,29 +14,29 @@ echo
 
 # ROCK BUILDCONF EXAMPLE
 #
-#if [ ! -f /opt/workspace/env.sh ]; then
-#    echo -e "\e[32m[INFO] First start: setting up the workspace.\e[0m"
-#
-#    # go to workspace dir
-#    cd /opt/workspace/
-#
-#    # set git config
-#    git config --global user.name "Image Builder"
-#    git config --global user.email "image@builder.me"
-#    git config --global credential.helper cache
-#
-#    # setup ws using autoproj
-#    wget rock-robotics.org/autoproj_bootstrap
-#    ruby autoproj_bootstrap git <BUILDCONF_URL> branch=master
-#    source env.sh
-#    aup
-#    amake
-#
-#    echo -e "\e[32m[INFO] workspace successfully initialized.\e[0m"
-#else 
-#    echo -e "\e[31m[ERROR] workspace already initialized.\e[0m"
-#    exit 1
-#fi
+if [ ! -f /opt/workspace/env.sh ]; then
+    echo -e "\e[32m[INFO] First start: setting up the workspace.\e[0m"
+
+    # go to workspace dir
+    cd /opt/workspace/
+
+    # set git config
+    git config --global user.name "Raul.Dominguez"
+    git config --global user.email "Raul.Dominguez@dfki.de"
+    git config --global credential.helper cache
+
+    # setup ws using autoproj
+    wget rock-robotics.org/autoproj_bootstrap
+    ruby autoproj_bootstrap git https://gitlab.com/h2020src/og3/cdff-buildconf  branch=cdff_dev --seed-config=/opt/config_seed.yml
+    source env.sh
+    aup
+    amake
+
+    echo -e "\e[32m[INFO] workspace successfully initialized.\e[0m"
+else 
+    echo -e "\e[31m[ERROR] workspace already initialized.\e[0m"
+    exit 1
+fi
 
 # ROS BUILDCONF EXAMPLE
 #
