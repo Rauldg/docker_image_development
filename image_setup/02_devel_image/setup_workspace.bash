@@ -5,14 +5,21 @@
 # stop on errors
 set -e
 
-echo
-echo -e "\e[33mworkspace init not set up, please inititialize it manually\e[0m"
-echo 
+BUILDCONF=
+BRANCH=
 
+if [ ! $1 = "" ]; then
+   echo "overriding git credential helper to $1"
+   CREDENTIAL_HELPER_MODE=$1
+fi
+
+# for Continuous Deployment builds the mode needs to be overridden to be non-interactive
+# if set outside this script, use that value, if unset use cache
+CREDENTIAL_HELPER_MODE=${CREDENTIAL_HELPER_MODE:="cache"}
 
 # In this file you can add a script that intitializes your workspace
 
-# ROCK BUILDCONF EXAMPLE
+# ROCK BUILDCONF EXAMPLE (non-interactive)
 #
 if [ ! -f /opt/workspace/env.sh ]; then
     echo -e "\e[32m[INFO] First start: setting up the workspace.\e[0m"
@@ -40,8 +47,6 @@ fi
 
 # ROS BUILDCONF EXAMPLE
 #
-## add /opt/startscritps to path, you need to do it here, because /home/devel is a mounted folder
-#echo 'export PATH=${PATH}:/opt/startscripts' | sudo tee -a /home/devel/.bashrc > /dev/null
 #if [ ! -d /opt/workspace/src ]; then
 #    echo "first start: setting up workspace"
 #    mkdir -p /opt/workspace/src
@@ -56,7 +61,7 @@ fi
 #    git config --global user.name "Image Builder"
 #    git config --global user.email "image@builder.me"
 #    git config --global credential.helper cache
-#    ruby autoproj_bootstrap git <BUILDCONF_URL> branch=master
+#    ruby autoproj_bootstrap git $BUILDCONF branch=$BRANCH
 #    . env.sh
 #    aup
 #    cd /opt/workspace

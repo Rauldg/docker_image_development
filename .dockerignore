@@ -1,11 +1,24 @@
+# This dockerignore file can be used to remove workspace parts from release images.
+# It is only evaluated whan using the image_setup/03_release_image/build.bash script
+# 
+# For example:
+# #Ignore everything in the workspace folder
+# workspace/**
+# # you can also add exemptions from previous definitions
+# # include binaries
+# !workspace/install/** 
+# # but not headers
+# workspace/install/include
+
 home/.ssh/
 home/.ddd/
 
-#vscode remopte-container plugin
+# exclude location of exported images
+image_setup/04_save_release/
+
+# vscode remote-container plugin
 home/.vscode-server/
 home/.cache/vscode-cpptools/
 
-#ros specifics
-home/.ignition/
-home/.ros/
-home/.rviz/
+# mounted .Xauthority that might have been left
+home/.Xauthority

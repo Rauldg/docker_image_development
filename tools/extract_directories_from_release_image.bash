@@ -22,7 +22,7 @@ if [ -d $HOST_WORKSPACE/startscripts ]; then
 fi
 
 . $HOST_WORKSPACE/settings.bash
-IMAGE_NAME=${DOCKER_REGISTRY:+${DOCKER_REGISTRY}/}$WORKSPACE_RELEASE_IMAGE
+IMAGE_NAME=${RELEASE_REGISTRY:+${RELEASE_REGISTRY}/}$WORKSPACE_RELEASE_IMAGE
 
 # find requested image locally or try pulling from registry
 if [ "$(docker image inspect $IMAGE_NAME 2> /dev/null)" == "[]" ]; then
@@ -64,7 +64,7 @@ fi
 echo -e "Copying workspace directory."
 docker cp $THIS_ID:/opt/workspace $HOST_WORKSPACE/workspace
 echo -e "Copying home directory."
-docker cp $THIS_ID:/home/devel $HOST_WORKSPACE/home
+docker cp $THIS_ID:/home/dockeruser $HOST_WORKSPACE/home
 echo -e "Copying startscripts directory."
 docker cp $THIS_ID:/opt/startscripts $HOST_WORKSPACE/startscripts
 
@@ -74,6 +74,8 @@ if [ ! -z $NEW_ID ]; then
     docker container rm $NEW_ID 2>&1 > /dev/null
 fi
 
+echo
+echo "To work with the extracted files, change the DEFAULT_EXECMODE to devel in settings.bash"
 echo
 echo "If you don't need the release image anymore, you may delete it:"
 echo "docker rmi $IMAGE_NAME"

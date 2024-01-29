@@ -3,8 +3,38 @@
 ROOT_DIR=$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 export PATH=$ROOT_DIR${PATH:+:${PATH}}
 
-complete -W  "$(ls startscripts | xargs) /bin/bash" ./deprecated_exec_in_devel.bash
-complete -W  "$(ls startscripts | xargs) /bin/bash" ./deprecated_exec_in_release.bash
+_exec_bash(){
+    local cur prev words cword package
 
-complete -W "devel release $(ls startscripts | xargs) /bin/bash" ./exec.bash
-complete -W "devel release" ./stop.bash
+    cur=${COMP_WORDS[COMP_CWORD]}
+
+    if [ "${COMP_WORDS[1]}" = "storedrelease" ]; then
+        # nothing comes after release
+        if [ "${#COMP_WORDS[@]}" -gt "4" ]; then
+            return
+        fi
+        if [ "${#COMP_WORDS[@]}" -gt "3" ]; then
+            COMPREPLY=($(compgen -W "$(ls startscripts | xargs) /bin/bash" -- "$cur"))
+            return
+        fi
+        # omit the first line
+        STORED_RELEASES=$(tail -n +2 .stored_images.txt | grep = | cut -d '=' -f 1)
+        COMPREPLY=($(compgen -W "${STORED_RELEASES}" -- "$cur"))
+        return
+    fi
+
+    if [ "${#COMP_WORDS[@]}" -gt "2" ]; then
+        COMPREPLY=($(compgen -W "$(ls startscripts | xargs) /bin/bash /opt/write_osdeps.bash" -- "$cur"))
+        return
+    fi
+
+    COMPREPLY=($(compgen -W "base devel release CD storedrelease $(ls startscripts | xargs) /bin/bash write_osdeps" -- "$cur"))
+    
+}
+
+complete -F _exec_bash ./exec.bash
+complete -F _exec_bash exec.bash
+complete -W "base devel release CD storedrelease" ./stop.bash
+complete -W "base devel release CD storedrelease" stop.bash
+complete -W "base devel release CD storedrelease" ./delete_container.bash
+complete -W "base devel release CD storedrelease" delete_container.bash

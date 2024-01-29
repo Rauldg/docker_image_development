@@ -51,4 +51,10 @@ apt-get update && apt-get install -y \
  ruby \
  ruby-activesupport \
  ruby-dev \
- ruby-thor
+ ruby-thor \
+ libsdformat6-dev \
+ libtinyxml-dev \
+ libyaml-cpp-dev
+
+# delete downloaded and installed .deb files to lower image size
+apt-get clean

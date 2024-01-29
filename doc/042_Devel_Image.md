@@ -7,7 +7,7 @@ The devel images contain project specific libraries and can be pushed to the reg
 
 ### Run From a Devel Image
 
-Just follow the instructions given in [docker usage](doc/020_Usage.md) for using a container and running commands in it.
+Just follow the instructions given in [docker usage](020_Usage.md) for using a container and running commands in it.
 Make sure you have access to the Docker registry if you haven't already pulled the image (might require docker login and potentially a VPN connection).
 Make sure that you use the exec mode `devel` (in your settings.bash or as argument to exec.bash).
 
@@ -16,7 +16,7 @@ The devel container is set up to mount several directories within the host's rep
 
 * **/opt/startscripts** corresponds to the host's `docker_development/startscripts`
 * **/opt/workspace** corresponds to the host's `docker_development/workspace`
-* **/home/devel** corresponds to the host's `docker_development/home`
+* **/home/dockeruser** corresponds to the host's `docker_development/home`
 
 These are initially empty. That means, in order to run applications from the workspace, it needs to be set up (and usually built) at the first run to fully initialize the container.
 
@@ -41,7 +41,7 @@ The general steps are:
 * Fork this repository for your project.
 * Select the desired base image (Ubuntu, Rock, Ros etc).
 * Add the installation of OS dependencies to the Dockerfile to add them to the environment.
-* Add workspace initialization scripts/howto, e.g. `/opt/setup_workspace_script.bash`
+* Add workspace initialization scripts/howto, e.g. `/opt/setup_workspace.bash`
 
 The suggested workflow and related topics are explained in detail in the following sections.
 
@@ -54,13 +54,13 @@ Then clone your fork to your system into the desired folder.
 
 Afterwards you edit the `settings.bash` in order to
   * set a new project name,
-  * make sure the default exec mode is specified `devel`,
+  * make sure the default exec mode is specified `base`,
   * select the base image to use,
   * set your registry (empty if none).
 
-Now you can make the first attempt to build the new image, using `bash build.bash`. Without changes to the Dockerfile, this will be equal to the base image.
-This is useful to see if the general process is working, and to proceed initializing the workspace within the newly generated container (try to run `bash exec.bash` too).
-
+Noe you can use ./exec to launch your container based on the base image and edit the workspace script (image_setup/02_devel_image/setup_workspace.bash or /opt/setup_workspace.bash in the container) until it works.
+You may need to run this script to test your workspace setup (clone repos, etc.) repeatedly until it works.
+You may need to clean up the workspace (i.e., the mounted directories) manually in between those runs, in order to simulate a fresh setup.
 
 #### Installation of Workspace Dependencies in the Dockerfile
 
@@ -68,10 +68,15 @@ Go to `docker_development/image_setup/02_devel_image` and add installation comma
 The Dockerfile is intended to contain any OS dependencies the workspace has (that are not already provided by the base image).
 
 Especially if you are not sure which packages need to be installed at this point, it might make sense to start with the next step, to prepare the workspace. Then you can complete the dependencies in the Dockerfile, using the helper scripts for dependency enumeration.
-The `list_*_osdeps.*` scripts help to determine which workspace-specific packages are required by the workspace.
-These are available for Rock and ROS workspaces and list all OS dependencies depending on the packages' provided metadata. They can be found in the `image_setup/02_devel_image` folder and the output format allows easy copy/pasting into the Dockerfile.
+
+You can start `bash /opt/write_osdeps.bash` to determine which workspace-specific packages are required by the workspace.
+The script detects Rock and ROS workspaces and list all OS dependencies depending on the packages, provided that metadata about dependencies is available.
+The workspace dependencies are written into the `image_setup/02_devel_image/workspace_os_dependencies.txt` and installed upon building a new devel image.
+Install instructions for packages that are not workspace dependencies (or in the metadata) sould be directly added into the Dockerfile
 
 __The later release image is not based on the devel container, it is based on the image. Any tools or dependencies not installed via the Dockerfile of the devel image will not be available in the release.__
+
+Now you can make the first attempt to build the new image, using `bash build.bash` in `image_setup/02_devel_image/`.
 
 Adding the installation of the packages to the Dockerfile of the devel image also adds the feature that they don't have to be re-installed every time the container is re-created. This might happen, when you clean up docker e.g. with `docker system prune` and your container is not running. When all dependencies are added to the image (Dockerfile), nothing has to be re-installed once you re-create the container after such a cleanup.
 
@@ -82,7 +87,6 @@ It is executed each time the container is created. It is recommended to make it 
 RUN echo 'echo -e "\n\e[32mplease run /opt/setup_workspace.bash to initialize the workspace\e[0m\n"' >> /opt/init_workspace.bash
 ```
 
-
 #### Post-Installation Steps via setup_workspace.bash
 
 For the devel image the `setup_workspace.bash` script is copied to **/opt/setup_workspace.bash** within the container. It is intended to contain all the steps to initialize the actual workspace, i.e., clone the required repositories via `autoproj_bootstrap` and `aup` or via `wstool`.
@@ -91,7 +95,9 @@ It is recommended to not include building/compiling the workspace (e.g., via `am
 This decoupling is intended to make it easier to spot the source of problems in the process. As it can take rather a long time overall, and if not decoupled it might not be obviously at which point the error occurred.
 
 You may need to run this script to test your workspace setup (clone repos, etc.) repeatedly until it works.
+
 You may need to clean up the workspace (i.e., the mounted directories) manually in between those runs, in order to simulate a fresh setup.
+
 Keep in mind that when using the devel image, the setup script is copied into the image during build, rather than being mounted as is the case for base images.
 If your workspace does not require a lot of OS dependencies, i.e., the workspace setup is rather quick, than you might consider developing the setup_workspace.bash script using the base image.
 To speed up the debugging process by using workspace related libraries you may use the devel image, where they are pre-installed (if listed in the Dockerfile).
@@ -113,63 +119,60 @@ As a recap, here the steps in short:
     <th>File to edit/execute</th>
  <tr>
     <td>0.</td>
-    <td>Fork this repository</td>
-    <td> => </td>
+    <td>Clone this repository</td>
+    <td></td>
     <td></td>
  </tr>
  <tr>
     <td>1.</td>
-    <td>Edit project name, select base image, exec mode & registry</td>
+    <td>Edit project name, select base image, set exec mode to base & set registry if needed</td>
     <td> => </td>
-    <td> edit (in the repo's root directory): <code>settings.bash</code> </td>
+    <td>in the repo's root directory edit:<br><code>settings.bash</code> </td>
  </tr>
  <tr>
     <td>2.</td>
     <td>Add the steps to setup your workspace<br></br> (e.g. using buildconf, wstool, git-repo, etc.)</td>
     <td> => </td>
-    <td> edit: <code>setup_workspace.bash</code> </td>
+    <td>in the repo's root directory edit:<br><code>image_setup/02_devel_image/setup_workspace.bash</code> </td>
  </tr>
   <tr>
     <td>3.</td>
     <td>Start container and attach shell to it to test the setup script</td>
     <td> => </td>
-    <td>exec (in the repo's root directory): <code>bash exec.bash base</code> </td>
+    <td>in the repo's root directory execute:<br><code>bash exec.bash base</code> </td>
  </tr>
  <tr>
     <td>4.</td>
     <td>Test the script for workspace initialization</td>
     <td> => </td>
-    <td>exec (in the attached container shell): <code>bash /opt/setup_workspace.bash</code></td>
+    <td>in the attached container shell run:<br><code>bash /opt/setup_workspace.bash</code></td>
  </tr>
  <tr>
     <td>5.</td>
     <td>Find out what OS dependencies are required</td>
     <td> => </td>
-    <td> ROS:<br></br>
-         &nbsp;&nbsp;&nbsp;&nbsp; - Add <code>list_ros_osdeps.bash</code> to your mounted workspace and run it there.<br></br>
-         &nbsp;&nbsp;&nbsp;&nbsp; - Remember to source the ROS environment and <code>rosdep update</code> first<br></br>
-         ROCK:<br></br>
-         &nbsp;&nbsp;&nbsp;&nbsp; - Add <code>list_rock_osdeps.rb</code> to your mounted workspace and run it there.<br></br>
-         &nbsp;&nbsp;&nbsp;&nbsp; - Remember to source your <code>env.sh</code> first.<br></br>
-         </td>
+ <td> Exit the container with <code>exit</code> and run <code>./exec.bash /opt/write_osdeps.bash</code> to extract workspace dependencies<br>
+         The dependencies list will be written to <code>image_setup/02_devel_image/workspace_os_dependencies.txt</code> and added to the devel image<br>
+         When you don't use ROCK or ROS put the dependencies manually to your Dockerfile in <code>image_setup/02_devel_image</code>
+    </td>
  </tr>
  <tr>
     <td>6.</td>
-    <td>Add those OS dependencies for installation to Dockerfile</td>
-    <td> => </td>
-    <td>edit: copy/paste output from previous step into your <code>02_devel_image/Dockerfile</code></td>
- </tr>
- <tr>
-    <td>7.</td>
     <td>Build the initial version of the devel image with OS dependencies</td>
     <td> => </td>
-    <td>exec (in <code>image_setup/02_devel_image</code>): <code>bash build.bash</code> </td>
+    <td>in <code>image_setup/02_devel_image</code> run: <code>bash build.bash</code> </td>
  </tr>
   <tr>
-    <td>8.</td>
-    <td>You should change the default exec mode to <code>devel</code> and push to your fork after pusing the image.</td>
+    <td>7.</td>
+    <td>You should change the default exec mode to <code>devel</code> and push to your fork after pusing the image to the docker registry</td>
     <td> => </td>
-    <td>edit <code>settings.bash</code> </td>
+    <td>in the repo's root directory edit: <code>settings.bash</code> </td>
+ </tr>
+ <tr>
+    <td>8.</td>
+    <td>push this repo to your project git</td>
+    <td></td>
+    <td></td>
  </tr>
 </table>
 
@@ -193,6 +196,8 @@ You may want to add these lines to the .bashrc of your container:
 git config --global credential.helper 'cache --timeout=2000'
 git config --global url."https://".insteadOf git://
 ```
+The git config can also be used to override git-ssh urls globally to http in case the repositories have git submodules defined with ssh urls.
+e.g. `git config --global url."https://git.hb.dfki.de/".insteadOf git@git.hb.dfki.de:`, it would be even better better is it to use a relative path as submodule url.
 
 
 #### Option 2) SSH (Public Key) Authentication
